@@ -19,7 +19,7 @@ class Group(models.Model):
         name = None
         while not valid_name:
             name = ''.join(secrets.choice(alphabet) for _ in range(cls.TOKEN_SIZE))
-            valid_name = not cls.objects.filter(token=name).exists()
+            valid_name = not cls.objects.filter(name=name).exists()
         return name
 
 
