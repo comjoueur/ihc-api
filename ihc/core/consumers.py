@@ -15,7 +15,8 @@ class UserConsumer(WebsocketConsumer):
         self.accept()
 
     def disconnect(self, close_code):
-        self.group.delete()
+        if self.group.owner == self.client:
+            self.group.delete()
         self.client.delete()
 
     def receive(self, text_data=None, bytes_data=None):
@@ -29,7 +30,7 @@ class UserConsumer(WebsocketConsumer):
             self.send(text_data=json.dumps({'group_id': group_name}))
 
     def send_message(self, message):
-        # async_to_sync(channel_layer.send)(self.client.channel_ws, {
+        # async_to_sync(self.channel_layer.send)(self.client.channel_ws, {
         #     'type': 'send_message',
         #     'message': json.dumps(action)
         # })
