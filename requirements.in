@@ -1,0 +1,5 @@
+django
+djangorestframework
+pip-tools
+channels
+django-cors-headers
