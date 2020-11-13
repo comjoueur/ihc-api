@@ -48,7 +48,9 @@ class UserConsumer(WebsocketConsumer):
                 'name': client.user.fullname,
                 'username': client.user.username,
                 'id': client.user.pk,
-                'token': client.user.token
+                'token': client.user.token,
+                'unlockedAnimals': client.user.unlocked_animals,
+                'answeredQuestions': client.user.answered_questions
             } for client in clients]
 
             async_to_sync(self.channel_layer.group_send)(
