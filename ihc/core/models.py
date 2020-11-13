@@ -4,13 +4,30 @@ import string
 import secrets
 
 
+class User(models.Model):
+    TOKEN_SIZE = 10
+
+    username = models.CharField(max_length=128, unique=True)
+    password = models.CharField(max_length=128)
+    token = models.CharField(max_length=TOKEN_SIZE, unique=True)
+    coins = models.IntegerField(default=0)
+    fullname = models.CharField(max_length=128, null=True, blank=True)
+
+    @classmethod
+    def generate_valid_user_token(cls):
+        alphabet = string.digits
+        valid_token = False
+        token = None
+        while not valid_token:
+            token = ''.join(secrets.choice(alphabet) for _ in range(cls.TOKEN_SIZE))
+            valid_token = not cls.objects.filter(token=token).exists()
+        return token
+
+
 class Group(models.Model):
     TOKEN_SIZE = 10
 
     name = models.CharField(max_length=TOKEN_SIZE, unique=True)
-    owner = models.ForeignKey('Client',
-                              related_name='owner_group',
-                              on_delete=models.CASCADE)
 
     @classmethod
     def generate_valid_group_name(cls):
@@ -24,22 +41,14 @@ class Group(models.Model):
 
 
 class Client(models.Model):
-    TOKEN_SIZE = 10
-
     channel_ws = models.CharField(max_length=256)
-    token = models.CharField(max_length=TOKEN_SIZE, unique=True)
+    user = models.ForeignKey(User,
+                             null=True,
+                             blank=True,
+                             on_delete=models.SET_NULL,
+                             related_name='clients')
     group = models.ForeignKey(Group,
                               null=True,
                               blank=True,
                               related_name='clients',
                               on_delete=models.SET_NULL)
-
-    @classmethod
-    def generate_valid_client_token(cls):
-        alphabet = string.digits
-        valid_token = False
-        token = None
-        while not valid_token:
-            token = ''.join(secrets.choice(alphabet) for _ in range(cls.TOKEN_SIZE))
-            valid_token = not cls.objects.filter(token=token).exists()
-        return token
