@@ -12,6 +12,9 @@ class User(models.Model):
     token = models.CharField(max_length=TOKEN_SIZE, unique=True)
     coins = models.IntegerField(default=0)
     fullname = models.CharField(max_length=128, null=True, blank=True)
+    unlocked_animals = models.IntegerField(default=0)
+    answered_questions = models.IntegerField(default=0)
+
 
     @classmethod
     def generate_valid_user_token(cls):

@@ -23,4 +23,8 @@ $ python manage.py runserver 0.0.0.0:8000
 ```sh
 $ chmod 400 pfc1-keys.pem
 $ ssh -i "pfc1-keys.pem" ubuntu@ec2-18-212-60-187.compute-1.amazonaws.com
+$ source venv/bin/activate
+$ git pull origin master
+$ python manage.py migrate
+$ python manage.py runserver 0.0.0.0:8000
 ```
