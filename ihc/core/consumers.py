@@ -98,7 +98,7 @@ class UserConsumer(MixinConsumer):
                 self.send_group_message({
                     'action': 'playerReady',
                     'status': 'continue',
-                    'clients': [client.token for client in group_clients],
+                    'clients': [client.user.token for client in group_clients],
                     'num_clients': group_clients.count()
                 })
 
