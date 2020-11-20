@@ -1,13 +1,35 @@
 
 import json
 from channels.generic.websocket import WebsocketConsumer
-from ihc.core.models import Client, Group, User
+from ihc.core.models import Client, Group, User, Question
 from asgiref.sync import async_to_sync
 
 
-class UserConsumer(WebsocketConsumer):
+class MixinConsumer(WebsocketConsumer):
     client = None
     group = None
+
+    def send_group_message(self, json_body):
+        async_to_sync(self.channel_layer.group_send)(
+            self.group.name,
+            {
+                "type": "send.message",
+                "text": json.dumps(json_body),
+            },
+        )
+
+    def send_client_message(self, json_body):
+        self.send(text_data=json.dumps(json_body))
+
+    def send_message(self, text):
+        self.send(text_data=text['text'])
+
+    def group_disconnect(self):
+        if self.group:
+            async_to_sync(self.channel_layer.group_discard)(self.group.name, self.channel_name)
+
+
+class UserConsumer(MixinConsumer):
 
     def connect(self):
         self.client = Client.objects.create(channel_ws=self.channel_name)
@@ -15,6 +37,7 @@ class UserConsumer(WebsocketConsumer):
 
     def disconnect(self, close_code):
         self.client.delete()
+        self.group_disconnect()
         if self.group and self.group.clients.all().count() == 0:
             self.group.delete()
 
@@ -26,7 +49,7 @@ class UserConsumer(WebsocketConsumer):
         self.client.save()
 
         if not self.client.user:
-            self.send(text_data=json.dumps({'errors': 'User not found'}))
+            self.send_client_message({'errors': 'User not found'})
             return
 
         if data['action'] == 'joinGroup':
@@ -37,7 +60,7 @@ class UserConsumer(WebsocketConsumer):
                 group_name = data['groupName']
                 self.group = Group.objects.filter(name=group_name).first()
                 if not self.group:
-                    self.send(text_data=json.dumps({'errors': 'Group not found'}))
+                    self.send_client_message({'errors': 'Group not found'})
                     return
 
             async_to_sync(self.channel_layer.group_add)(group_name, self.channel_name)
@@ -53,29 +76,58 @@ class UserConsumer(WebsocketConsumer):
                 'answeredQuestions': client.user.answered_questions
             } for client in clients]
 
-            async_to_sync(self.channel_layer.group_send)(
-                self.group.name,
-                {
-                    "type": "send.message",
-                    "text": json.dumps({
-                        'groupName': self.group.name,
-                        'action': 'joinGroup',
-                        'users': user_names,
-                        'num_users': len(user_names)
-                    }),
-                },
-            )
+            self.send_group_message({
+                'groupName': self.group.name,
+                'action': 'joinGroup',
+                'users': user_names,
+                'num_users': len(user_names)
+            })
+
         elif data['action'] == 'exitGroup':
             self.client.group = None
             self.client.save()
+            self.group_disconnect()
             if self.group and self.group.clients.all().count() == 0:
                 self.group.delete()
 
-    def send_message(self, text):
-        self.send(text_data=text['text'])
+        elif data['action'] == 'playerReady':
+            self.client.ready = data['ready']
+            self.client.save()
+            group_clients = self.group.clients.all().filter(ready=True)
+            if group_clients.count() == Group.GROUP_SIZE:
+                self.send_group_message({
+                    'action': 'playerReady',
+                    'status': 'continue',
+                    'clients': [client.token for client in group_clients],
+                    'num_clients': group_clients.count()
+                })
+
+        elif data['action'] == 'getQuestion':
+            question = Question.objects.order_by('?').first()
+            user = self.group.clients.all().order_by('?').first().user
+            if question and user:
+                if question.kind == Question.QUESTION_KIND_OPTIONS:
+                    self.send_group_message({
+                        'action': 'getQuestion',
+                        'kind': question.kind,
+                        'question': question.value,
+                        'option1': question.option1,
+                        'option2': question.option2,
+                        'option3': question.option3,
+                        'userName': user.username,
+                        'userToken': user.token,
+                    })
+                elif question.kind == Question.QUESTION_KIND_CAM:
+                    self.send_group_message({
+                        'action': 'getQuestion',
+                        'kind': question.kind,
+                        'question': question.value,
+                        'userName': user.username,
+                        'userToken': user.token,
+                    })
 
 
-class AuthConsumer(WebsocketConsumer):
+class AuthConsumer(MixinConsumer):
     def connect(self):
         self.accept()
 
@@ -87,8 +139,8 @@ class AuthConsumer(WebsocketConsumer):
         user = User.objects.filter(username=credentials['username'],
                                    password=credentials['password']).first()
         if user:
-            self.send(text_data=json.dumps({'token': user.token,
-                                            'coins': user.coins,
-                                            'id': user.pk}))
+            self.send_client_message({'token': user.token,
+                                      'coins': user.coins,
+                                      'id': user.pk})
         else:
-            self.send(text_data=json.dumps({'errors': 'User not found'}))
+            self.send_client_message({'errors': 'User not found'})

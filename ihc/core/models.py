@@ -29,6 +29,7 @@ class User(models.Model):
 
 class Group(models.Model):
     TOKEN_SIZE = 10
+    GROUP_SIZE = 3
 
     name = models.CharField(max_length=TOKEN_SIZE, unique=True)
 
@@ -55,3 +56,23 @@ class Client(models.Model):
                               blank=True,
                               related_name='clients',
                               on_delete=models.SET_NULL)
+    ready = models.BooleanField(default=False)
+
+
+class Question(models.Model):
+    QUESTION_KIND_CAM = 'question_cam'
+    QUESTION_KIND_OPTIONS = 'question_options'
+    KIND_QUESTIONS_CHOICES = [
+        ('Question Cam', QUESTION_KIND_CAM),
+        ('Question Options', QUESTION_KIND_OPTIONS)
+    ]
+
+    value = models.CharField(max_length=512)
+    option1 = models.CharField(max_length=256, null=True, blank=True)
+    option2 = models.CharField(max_length=256, null=True, blank=True)
+    option3 = models.CharField(max_length=256, null=True, blank=True)
+    answer = models.IntegerField(default=0)
+    kind = models.CharField(max_length=64, choices=KIND_QUESTIONS_CHOICES)
+
+    def validate_answer(self, answer):
+        return answer == self.answer
