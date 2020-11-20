@@ -114,6 +114,7 @@ class UserConsumer(MixinConsumer):
                         'option1': question.option1,
                         'option2': question.option2,
                         'option3': question.option3,
+                        'questionID': question.pk,
                         'userName': user.username,
                         'userToken': user.token,
                     })
