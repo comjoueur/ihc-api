@@ -122,9 +122,32 @@ class UserConsumer(MixinConsumer):
                         'action': 'getQuestion',
                         'kind': question.kind,
                         'question': question.value,
+                        'questionID': question.pk,
                         'userName': user.username,
                         'userToken': user.token,
                     })
+
+        elif data['action'] == 'validateAnswer':
+            question_id = int(data['questionID'])
+            question = Question.objects.filter(pk=question_id).first()
+            if question and question.validate_answer(data['answer']):
+                self.send_client_message({
+                    'action': 'validateAnswer',
+                    'valid': 'correct'
+                })
+                self.send_group_message({
+                    'action': 'statusAnswer',
+                    'valid': 'correct'
+                })
+            else:
+                self.send_client_message({
+                    'action': 'validateAnswer',
+                    'valid': 'wrong'
+                })
+                self.send_group_message({
+                    'action': 'statusAnswer',
+                    'valid': 'wring'
+                })
 
 
 class AuthConsumer(MixinConsumer):
