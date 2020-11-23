@@ -147,7 +147,7 @@ class UserConsumer(MixinConsumer):
                 })
                 self.send_group_message({
                     'action': 'statusAnswer',
-                    'valid': 'wring'
+                    'valid': 'wrong'
                 })
 
 
