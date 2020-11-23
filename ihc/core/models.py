@@ -63,8 +63,8 @@ class Question(models.Model):
     QUESTION_KIND_CAM = 'question_cam'
     QUESTION_KIND_OPTIONS = 'question_options'
     KIND_QUESTIONS_CHOICES = [
-        ('Question Cam', QUESTION_KIND_CAM),
-        ('Question Options', QUESTION_KIND_OPTIONS)
+        (QUESTION_KIND_CAM, 'Question Cam'),
+        (QUESTION_KIND_OPTIONS, 'Question Options')
     ]
 
     value = models.CharField(max_length=512)
