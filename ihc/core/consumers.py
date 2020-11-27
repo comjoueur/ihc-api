@@ -193,11 +193,6 @@ class UserConsumer(MixinConsumer):
                         'valid': 'wrong',
                         'questionID': question.pk
                     })
-                    self.send_group_message({
-                        'action': 'statusAnswer',
-                        'valid': 'wrong',
-                        'questionID': question.pk
-                    })
 
 
 class AuthConsumer(MixinConsumer):
