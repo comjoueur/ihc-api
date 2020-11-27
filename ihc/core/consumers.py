@@ -154,7 +154,7 @@ class UserConsumer(MixinConsumer):
             answer_user.answer = data['answer']
             answer_user.save()
             group_user = GroupUser.objects.filter(group=self.group,
-                                                  question=question)
+                                                  question=question).first()
             group_users_answers = [
                 {
                     'username': answer.user.username,
