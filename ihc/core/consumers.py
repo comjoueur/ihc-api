@@ -188,7 +188,7 @@ class UserConsumer(MixinConsumer):
                         'questionID': question.pk
                     })
                 else:
-                    self.send_client_message({
+                    self.send_group_message({
                         'action': 'validateAnswer',
                         'valid': 'wrong',
                         'questionID': question.pk
