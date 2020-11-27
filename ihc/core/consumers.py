@@ -1,7 +1,7 @@
 
 import json
 from channels.generic.websocket import WebsocketConsumer
-from ihc.core.models import Client, Group, User, Question
+from ihc.core.models import Client, Group, User, Question, GroupUser, AnswerUser
 from asgiref.sync import async_to_sync
 
 
@@ -10,6 +10,8 @@ class MixinConsumer(WebsocketConsumer):
     group = None
 
     def send_group_message(self, json_body):
+        print("Send Group Message")
+        print(json_body)
         async_to_sync(self.channel_layer.group_send)(
             self.group.name,
             {
@@ -19,6 +21,8 @@ class MixinConsumer(WebsocketConsumer):
         )
 
     def send_client_message(self, json_body):
+        print("Send Client Message")
+        print(json_body)
         self.send(text_data=json.dumps(json_body))
 
     def send_message(self, text):
@@ -43,6 +47,7 @@ class UserConsumer(MixinConsumer):
 
     def receive(self, text_data=None, bytes_data=None):
         data = json.loads(text_data)
+        print("Receive Client Message")
         print(data)
         token = data['token']
         self.client.user = User.objects.filter(token=token).first()
@@ -62,7 +67,7 @@ class UserConsumer(MixinConsumer):
                 if not self.group:
                     self.send_client_message({'errors': 'Group not found'})
                     return
-
+            GroupUser.objects.create(group=self.group, user=self.client.user)
             async_to_sync(self.channel_layer.group_add)(group_name, self.channel_name)
             self.client.group = self.group
             self.client.save()
@@ -95,6 +100,7 @@ class UserConsumer(MixinConsumer):
             self.client.save()
             group_clients = self.group.clients.all().filter(ready=True)
             if group_clients.count() == Group.GROUP_SIZE:
+                Question.generate_group_questions(self.group)
                 self.send_group_message({
                     'action': 'playerReady',
                     'status': 'continue',
@@ -103,9 +109,16 @@ class UserConsumer(MixinConsumer):
                 })
 
         elif data['action'] == 'getQuestion':
-            question = Question.objects.order_by('?').first()
-            user = self.group.clients.all().order_by('?').first().user
-            if question and user:
+            group_user = self.group.group_users.all().filter(wasted=False).first()
+            if group_user:
+                user = group_user.user
+                question = group_user.question
+                user_names = [{
+                    'name': client.user.fullname,
+                    'username': client.user.username,
+                    'id': client.user.pk,
+                    'token': client.user.token,
+                } for client in self.group.clients.all()]
                 if question.kind == Question.QUESTION_KIND_OPTIONS:
                     self.send_group_message({
                         'action': 'getQuestion',
@@ -117,6 +130,8 @@ class UserConsumer(MixinConsumer):
                         'questionID': question.pk,
                         'userName': user.username,
                         'userToken': user.token,
+                        'users': user_names,
+                        'num_users': len(user_names)
                     })
                 elif question.kind == Question.QUESTION_KIND_CAM:
                     self.send_group_message({
@@ -127,28 +142,62 @@ class UserConsumer(MixinConsumer):
                         'userName': user.username,
                         'userToken': user.token,
                     })
+                group_user.wasted = True
+                group_user.save()
 
         elif data['action'] == 'validateAnswer':
             question_id = int(data['questionID'])
             question = Question.objects.filter(pk=question_id).first()
-            if question and question.validate_answer(data['answer']):
-                self.send_client_message({
-                    'action': 'validateAnswer',
-                    'valid': 'correct'
-                })
-                self.send_group_message({
-                    'action': 'statusAnswer',
-                    'valid': 'correct'
-                })
-            else:
-                self.send_client_message({
-                    'action': 'validateAnswer',
-                    'valid': 'wrong'
-                })
-                self.send_group_message({
-                    'action': 'statusAnswer',
-                    'valid': 'wrong'
-                })
+            answer_user, _ = AnswerUser.objects.get_or_create(user=self.client.user,
+                                                              group=self.group,
+                                                              question=question)
+            answer_user.answer = data['answer']
+            answer_user.save()
+            group_user = GroupUser.objects.filter(group=self.group,
+                                                  question=question)
+            group_users_answers = [
+                {
+                    'username': answer.user.username,
+                    'token': answer.user.token,
+                    'answer': answer.answer,
+                } for answer in self.group.answer_users.all()
+            ]
+            group_users_state = [
+                {
+                    'username': client.user.username,
+                    'token': client.user.token,
+                    'answered': 'True' if AnswerUser.objects.filter(user=client.user,
+                                                                    question=question,
+                                                                    group=self.group).exists() else 'False'
+                } for client in self.group.clients.all()
+            ]
+
+            self.send_group_message({
+                'action': 'statusAnswer',
+                'groupUserAnswers': group_users_answers,
+                'num_groupUserAnswers': len(group_users_answers),
+                'groupUserState': group_users_state,
+                'num_groupUserState': len(group_users_state)
+            })
+
+            if self.client.user == group_user.user:
+                if question and question.validate_answer(data['answer']):
+                    self.send_group_message({
+                        'action': 'validateAnswer',
+                        'valid': 'correct',
+                        'questionID': question.pk
+                    })
+                else:
+                    self.send_client_message({
+                        'action': 'validateAnswer',
+                        'valid': 'wrong',
+                        'questionID': question.pk
+                    })
+                    self.send_group_message({
+                        'action': 'statusAnswer',
+                        'valid': 'wrong',
+                        'questionID': question.pk
+                    })
 
 
 class AuthConsumer(MixinConsumer):

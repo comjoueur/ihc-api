@@ -15,7 +15,6 @@ class User(models.Model):
     unlocked_animals = models.IntegerField(default=0)
     answered_questions = models.IntegerField(default=0)
 
-
     @classmethod
     def generate_valid_user_token(cls):
         alphabet = string.digits
@@ -29,7 +28,7 @@ class User(models.Model):
 
 class Group(models.Model):
     TOKEN_SIZE = 10
-    GROUP_SIZE = 2
+    GROUP_SIZE = 1
 
     name = models.CharField(max_length=TOKEN_SIZE, unique=True)
 
@@ -76,3 +75,45 @@ class Question(models.Model):
 
     def validate_answer(self, answer):
         return answer == self.answer
+
+    @classmethod
+    def generate_group_questions(cls, group):
+        group_users = group.group_users.all()
+        questions = Question.objects.order_by('?')[:Group.GROUP_SIZE]
+        questions = [question.pk for question in questions]
+        for index, group_user in enumerate(group_users):
+            group_user.question = Question.objects.get(pk=questions[index])
+            group_user.save()
+
+
+class GroupUser(models.Model):
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='group_users')
+    group = models.ForeignKey(Group,
+                              on_delete=models.CASCADE,
+                              related_name='group_users')
+    question = models.ForeignKey(Question,
+                                 on_delete=models.CASCADE,
+                                 null=True,
+                                 blank=True,
+                                 related_name='group_users')
+    wasted = models.BooleanField(default=False)
+
+
+class AnswerUser(models.Model):
+    user = models.ForeignKey(User,
+                             on_delete=models.CASCADE,
+                             related_name='answer_users')
+    group = models.ForeignKey(Group,
+                              on_delete=models.CASCADE,
+                              related_name='answer_users')
+    question = models.ForeignKey(Question,
+                                 on_delete=models.CASCADE,
+                                 null=True,
+                                 blank=True,
+                                 related_name='answer_users')
+    answer = models.IntegerField(default=0)
+
+    def validate_answer(self):
+        return self.question.validate_answer(self.answer)
