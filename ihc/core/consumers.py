@@ -105,7 +105,8 @@ class UserConsumer(MixinConsumer):
                     'action': 'playerReady',
                     'status': 'continue',
                     'clients': [client.user.token for client in group_clients],
-                    'num_clients': group_clients.count()
+                    'num_clients': group_clients.count(),
+                    'groupID': self.group.pk,
                 })
 
         elif data['action'] == 'getQuestion':
@@ -195,6 +196,11 @@ class UserConsumer(MixinConsumer):
                         'valid': 'wrong',
                         'questionID': question.pk
                     })
+
+        elif data['action'] == 'updateClientData':
+            self.group = Group.objects.filter(pk=data['groupID'])
+            self.client.group = self.group
+            self.client.save()
 
 
 class AuthConsumer(MixinConsumer):
