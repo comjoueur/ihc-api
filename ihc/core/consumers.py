@@ -201,6 +201,7 @@ class UserConsumer(MixinConsumer):
             self.group = Group.objects.filter(pk=data['groupID'])
             self.client.group = self.group
             self.client.save()
+            async_to_sync(self.channel_layer.group_add)(self.group.name, self.channel_name)
 
 
 class AuthConsumer(MixinConsumer):
