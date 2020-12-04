@@ -141,6 +141,8 @@ class UserConsumer(MixinConsumer):
                         'questionID': question.pk,
                         'userName': user.username,
                         'userToken': user.token,
+                        'users': user_names,
+                        'num_users': len(user_names)
                     })
                 group_user.wasted = True
                 group_user.save()
