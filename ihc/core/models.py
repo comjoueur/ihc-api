@@ -60,6 +60,8 @@ class Client(models.Model):
 
 class Question(models.Model):
 
+    QUESTION_PER_USER = 3
+
     ANIMAL_ANSWERS = {
         'human': 11,
         'rhino': 7,
@@ -94,7 +96,7 @@ class Question(models.Model):
     @classmethod
     def generate_group_questions(cls, group):
         group_users = group.group_users.all()
-        questions = Question.objects.order_by('?')[:(Group.GROUP_SIZE * 3)]
+        questions = Question.objects.order_by('?')[:(Group.GROUP_SIZE * cls.QUESTION_PER_USER)]
         questions = [question.pk for question in questions]
 
         for index, group_user in enumerate(group_users):

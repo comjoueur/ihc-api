@@ -68,9 +68,8 @@ class UserConsumer(MixinConsumer):
                     self.send_client_message({'errors': 'Group not found'})
                     return
 
-            GroupUser.objects.create(group=self.group, user=self.client.user)
-            GroupUser.objects.create(group=self.group, user=self.client.user)
-            GroupUser.objects.create(group=self.group, user=self.client.user)  # refactor this
+            for _ in range(Question.QUESTION_PER_USER):
+                GroupUser.objects.create(group=self.group, user=self.client.user)
 
             async_to_sync(self.channel_layer.group_add)(group_name, self.channel_name)
             self.client.group = self.group
