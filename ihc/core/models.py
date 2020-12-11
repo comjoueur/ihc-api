@@ -94,10 +94,11 @@ class Question(models.Model):
     @classmethod
     def generate_group_questions(cls, group):
         group_users = group.group_users.all()
-        questions = Question.objects.order_by('?')[:Group.GROUP_SIZE]
+        questions = Question.objects.order_by('?')[:(Group.GROUP_SIZE * 2)]
         questions = [question.pk for question in questions]
         for index, group_user in enumerate(group_users):
-            group_user.question = Question.objects.get(pk=questions[index])
+            group_user.question = Question.objects.get(pk=questions[2 * index])
+            group_user.question = Question.objects.get(pk=questions[2 * index + 1])
             group_user.save()
 
 
