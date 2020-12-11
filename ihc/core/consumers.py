@@ -69,6 +69,7 @@ class UserConsumer(MixinConsumer):
                     return
 
             GroupUser.objects.create(group=self.group, user=self.client.user)
+            GroupUser.objects.create(group=self.group, user=self.client.user)
             GroupUser.objects.create(group=self.group, user=self.client.user)  # refactor this
 
             async_to_sync(self.channel_layer.group_add)(group_name, self.channel_name)
