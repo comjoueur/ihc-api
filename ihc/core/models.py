@@ -61,17 +61,17 @@ class Client(models.Model):
 class Question(models.Model):
 
     ANIMAL_ANSWERS = {
-        'human': 1,
-        'rhino': 2,
-        'whale': 3,
-        'elephant': 4,
-        'tiger': 5,
-        'gorilla': 6,
-        'deer': 7,
-        'bear': 8,
+        'human': 11,
+        'rhino': 7,
+        'whale': 5,
+        'elephant': 6,
+        'tiger': 1,
+        'gorilla': 8,
+        'deer': 3,
+        'bear': 2,
         'shark': 9,
-        'octopus': 10,
-        'owl': 11,
+        'octopus': 4,
+        'owl': 10,
     }
 
     QUESTION_KIND_CAM = 'question_cam'
