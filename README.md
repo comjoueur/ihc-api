@@ -23,6 +23,7 @@ $ python manage.py runserver 0.0.0.0:8000
 ```sh
 $ chmod 400 pfc1-keys.pem
 $ ssh -i "pfc1-keys.pem" ubuntu@ec2-54-88-50-230.compute-1.amazonaws.com
+$ cd ihc-api/
 $ source venv/bin/activate
 $ git pull origin master
 $ python manage.py migrate
