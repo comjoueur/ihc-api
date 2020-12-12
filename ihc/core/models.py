@@ -28,7 +28,7 @@ class User(models.Model):
 
 class Group(models.Model):
     TOKEN_SIZE = 10
-    GROUP_SIZE = 3
+    GROUP_SIZE = 1
 
     name = models.CharField(max_length=TOKEN_SIZE, unique=True)
 
