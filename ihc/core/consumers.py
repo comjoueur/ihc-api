@@ -166,7 +166,7 @@ class UserConsumer(MixinConsumer):
                     'username': answer.user.username,
                     'token': answer.user.token,
                     'answer': answer.answer,
-                } for answer in self.group.answer_users.all()
+                } for answer in self.group.answer_users.filter(question=question)
             ]
             group_users_state = [
                 {
